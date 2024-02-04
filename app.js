@@ -1,23 +1,44 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
 require('dotenv').config();
-const { parseRelativeTime } = require('./helpers');
+const { parseRelativeTime} = require('./helpers');
+const { MongoClient } = require('mongodb');
 
+const Stealth = require('puppeteer-extra-plugin-stealth');
+
+const uri = `mongodb+srv://piuslchua:${process.env.MONGODB_PASSWORD}@cluster0.nq9iwkk.mongodb.net/?retryWrites=true&w=majority`
+const mongoClient = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+
+async function connectToMongoDB() {
+  try {
+    await mongoClient.connect();
+    console.log('Connected to MongoDB');
+
+    // Use the database as needed
+
+  } finally {
+    // Ensure the client is closed when done
+    await mongoClient.close();
+  }
+}
 
 async function automateBrowser(query) {
   // Launch the browser and open a new blank page
+  puppeteer.use(Stealth());
+
   const browser = await puppeteer.launch({
     devtools: true, 
     headless: false,
     ignoreHTTPSErrors: true,
-    args: [`--window-size=1920,1080`],
+    args: [
+      '--window-size=1920,1080',
+      '--proxy-server=brd.superproxy.io:22225'   
+    ],
           defaultViewport: {
             width:1920,
             height:1080
           }
   });
-
-
-
   
   let targetCount = 100
   scrapedData = await scrapeVideoUrls(browser, query, targetCount)
@@ -26,17 +47,19 @@ async function automateBrowser(query) {
 }
 
 async function scrapeVideoUrls(browser, query, targetCount ) {
+  console.log('launched!')
   const username = process.env.PUPPETEER_USERNAME;
   const password = process.env.PUPPETEER_PASSWORD;
   const host = process.env.PUPPETEER_HOST;
 
   const page = await browser.newPage();
-    await page.authenticate({
+  await page.authenticate({
       username: username,
       password: password,
       host: host
     })
-
+  await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36');
 
   const currentDate = new Date();
   const extractedData = []
@@ -44,18 +67,20 @@ async function scrapeVideoUrls(browser, query, targetCount ) {
   
     // search term
     await page.goto('http://tiktok.com/', { waitUntil: 'domcontentloaded'});
-    
+  
     try { 
       const btnSelector = '.css-txolmk-DivGuestModeContainer.exd0a435';
       const buttonExists = await page.waitForSelector(btnSelector);
       if (buttonExists) {
+        await page.waitForTimeout(2100);
+        await page.mouse.move(200, 400, { steps: 5 });
         await page.click(btnSelector);
       }
         await page.waitForTimeout(2100);
 
-        const searchBox = await page.$('input[type=search]');
+      const searchBox = await page.$('input[type=search]');
       if (searchBox) {
-        await searchBox.type(query, { delay: 167 });
+        await searchBox.type(query, { delay: 223 });
         await page.waitForTimeout(610);
         await searchBox.press('Enter');
     } else {
@@ -76,6 +101,7 @@ async function scrapeVideoUrls(browser, query, targetCount ) {
 
     }
 
+  
     const cardDivSelector = '.css-1soki6-DivItemContainerForSearch.e19c29qe10'
     await page.waitForSelector(cardDivSelector);
     while (targetCount > extractedData.length) {
@@ -122,6 +148,10 @@ async function scrapeVideoUrls(browser, query, targetCount ) {
 }
     
 
+async function testScraperStealth() {
 
 
-automateBrowser("#papaplatte");
+}
+
+connectToMongoDB();
+/* automateBrowser("#papaplatte"); */

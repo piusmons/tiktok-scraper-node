@@ -17,5 +17,3 @@ exports.parseRelativeTime = function(rawDate) {
   }
   
 }
-
-
