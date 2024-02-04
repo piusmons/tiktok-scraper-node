@@ -5,21 +5,23 @@ const { MongoClient } = require('mongodb');
 
 const Stealth = require('puppeteer-extra-plugin-stealth');
 
-const uri = `mongodb+srv://piuslchua:${process.env.MONGODB_PASSWORD}@cluster0.nq9iwkk.mongodb.net/?retryWrites=true&w=majority`
-const mongoClient = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+const uri=process.env.MONGODB_URI
+mongoClient = new MongoClient(uri);
 
 
-async function connectToMongoDB() {
+async function connectToCluster(uri) {
   try {
+    // Connect the client to the server	(optional starting in v4.7)
     await mongoClient.connect();
-    console.log('Connected to MongoDB');
-
-    // Use the database as needed
-
+    // Send a ping to confirm a successful connection
+    await mongoClient.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-    // Ensure the client is closed when done
+    // Ensures that the client will close when you finish/error
     await mongoClient.close();
   }
+
+  
 }
 
 async function automateBrowser(query) {
@@ -153,5 +155,5 @@ async function testScraperStealth() {
 
 }
 
-connectToMongoDB();
+connectToCluster(uri);
 /* automateBrowser("#papaplatte"); */
