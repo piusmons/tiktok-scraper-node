@@ -13,8 +13,8 @@ async function automateBrowser(query,targetCount, officialAccount) {
   // Launch the browser and open a new blank page
   puppeteer.use(Stealth());
   const proxy = 'brd.superproxy.io:22225';
-  const username = 'brd-customer-hl_bee24a1f-zone-demo';
-  const password = 'a0o88qwxxrov';
+  const username = 'wew';
+  const password = 'asd';
   const originalUrl = `http://brd-customer-hl_bee24a1f-zone-demo:a0o88qwxxrov@${proxy}`;
   const newUrl = await proxyChain.anonymizeProxy(originalUrl);
   const browser = await puppeteer.launch({
@@ -90,7 +90,8 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount, pag
   
     const cardDivSelector = '.css-1soki6-DivItemContainerForSearch.e19c29qe10'
     await page.waitForSelector(cardDivSelector);
-    while (targetCount > extractedData.length) {
+
+    while (targetCount < extractedData.length) {
 
     const div = await page.$$(cardDivSelector)
 
@@ -128,7 +129,8 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount, pag
     await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
     await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`);
 
-    await new Promise((resolve) => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 5000));
+
   } 
 
   

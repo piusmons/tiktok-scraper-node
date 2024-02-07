@@ -3,6 +3,7 @@
 
 exports.parseRelativeTime = function(rawDate) {
   const now = new Date();
+  
   if (rawDate.includes('h ago')) {
     //checks if is in the format ex. 5h ago
     const hoursAgo = parseInt(rawDate, 10);
