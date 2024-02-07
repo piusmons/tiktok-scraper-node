@@ -7,18 +7,22 @@ const schema = require('mongoose')
 const mongoService = require('./mongoService')
 const Stealth = require('puppeteer-extra-plugin-stealth');
 const ScrapedUrl = require('../models/urlModel.js');
+const proxyChain = require('proxy-chain');
 
 async function automateBrowser(query,targetCount, officialAccount) {
   // Launch the browser and open a new blank page
   puppeteer.use(Stealth());
-
+  const proxy = 'brd.superproxy.io:22225';
+  const username = 'brd-customer-hl_bee24a1f-zone-demo';
+  const password = 'a0o88qwxxrov';
+  const originalUrl = `http://brd-customer-hl_bee24a1f-zone-demo:a0o88qwxxrov@${proxy}`;
+  const newUrl = await proxyChain.anonymizeProxy(originalUrl);
   const browser = await puppeteer.launch({
     devtools: true, 
     headless: false,
-    ignoreHTTPSErrors: true,
     args: [
+      `--proxy-server=${newUrl}`,
       '--window-size=1920,1080',
-     
     ],
           defaultViewport: {
             width:1920,
@@ -26,33 +30,28 @@ async function automateBrowser(query,targetCount, officialAccount) {
           }
   });
   
-  scrapedData = await scrapeVideoUrls(browser, query, targetCount, officialAccount)
-  console.log('what is scraped data', scrapedData)
-
-}
-
-async function scrapeVideoUrls(browser, query, targetCount, officialAccount ) {
-  console.log('launched!')
-  const username = process.env.PUPPETEER_USERNAME;
-  const password = process.env.PUPPETEER_PASSWORD;
-  const host = process.env.PUPPETEER_HOST;
-
   const page = await browser.newPage();
   await page.authenticate({
-      username: username,
-      password: password,
-      host: host
-    })
+    username,
+    password,
+  });
+  
+  console.log(page) 
   await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36');
-
-  const currentDate = new Date();
-  const extractedData = []
-
   
     // search term
-    await page.goto('http://tiktok.com/', { waitUntil: 'domcontentloaded'});
+  await page.goto('https://www.tiktok.com/', { waitUntil: 'domcontentloaded'});
   
+  scrapedData = await scrapeVideoUrls(browser, query, targetCount, officialAccount, page) 
+  //*console.log('what is scraped data', scrapedData)
+}
+
+async function scrapeVideoUrls(browser, query, targetCount, officialAccount, page ) {
+  console.log('launched!')
+  
+    const currentDate = new Date();
+    const extractedData = []
     try { 
       const buttonSelector = '[data-e2e="channel-item"].css-u3m0da-DivBoxContainer';
       const buttonExists = await page.waitForSelector(buttonSelector , { visible: true });
@@ -71,11 +70,7 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount ) {
         await page.waitForTimeout(610);
         await searchBox.press('Enter');
     } else {
-      console.error('Search box not found on the page.');
-    }
-
-    } catch {
-      console.error('button did not appear! proceeding to next action')
+      console.error('Search box not found on the page.proceeding to next action');
       const searchBox = await page.$('input[type=search]');
 
       if (searchBox) {
@@ -85,7 +80,11 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount ) {
       } else {
         console.error('Search box not found on the page.');
       }
+    }
 
+    } catch {
+      console.error('error', error)
+      
     }
 
   

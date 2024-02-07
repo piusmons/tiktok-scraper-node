@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const urlSchema = new mongoose.Schema({
-  url: String,
+  url: {type: String, unique: true},
   date: Date,
   uploader: String,
 }, {

@@ -1,9 +1,7 @@
 
 require('dotenv').config();
-const { parseRelativeTime} = require('./helpers');
 const mongoose = require('mongoose');
 const puppeteerService = require('./services/puppeteerService');
-const mongoService = require('./services/mongoService')
 
 
 const connect = async () => {
@@ -16,8 +14,8 @@ const connect = async () => {
 }
     
 
+
+
+
 connect()
 puppeteerService.automateBrowser("#papaplatte",5,"papaplatte"); 
-
-
-
