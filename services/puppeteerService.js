@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer-extra');
 require('dotenv').config();
-const { parseRelativeTime} = require('../helpers');
+const { parseRelativeTime, generateRandomUserAgent, randomTimeout} = require('./helpers');
 const uri = process.env.MONGODB_URI || 'mongodb+srv://piuslchua:itJ8A1rlNvwXa44u@cluster0.tmdmrrf.mongodb.net/?retryWrites=true&w=majority';
 const mongoose = require('mongoose');
 const schema = require('mongoose')
@@ -9,37 +9,42 @@ const Stealth = require('puppeteer-extra-plugin-stealth');
 const ScrapedUrl = require('../models/urlModel.js');
 const proxyChain = require('proxy-chain');
 
+
 async function automateBrowser(query,targetCount, officialAccount) {
-  // Launch the browser and open a new blank page
+
+
+  const username = process.env.USERNAME 
+  const password = process.env.PASSWORD
   puppeteer.use(Stealth());
-  const proxy = 'brd.superproxy.io:22225';
-  const username = 'wew';
-  const password = 'asd';
-  const originalUrl = `http://brd-customer-hl_bee24a1f-zone-demo:a0o88qwxxrov@${proxy}`;
+  const proxy = '';
+  const originalUrl = `http://${username}:${password}@45.88.101.145:5432`;
   const newUrl = await proxyChain.anonymizeProxy(originalUrl);
   const browser = await puppeteer.launch({
-    devtools: true, 
     headless: false,
     args: [
       `--proxy-server=${newUrl}`,
-      '--window-size=1920,1080',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-infobars',
+      '--window-position=0,0',
+      '--ignore-certifcate-errors',
+      '--ignore-certifcate-errors-spki-list',
     ],
-          defaultViewport: {
-            width:1920,
-            height:1080
-          }
   });
   
-  const page = await browser.newPage();
-  await page.authenticate({
-    username,
-    password,
-  });
   
-  console.log(page) 
-  await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36');
   
+  const pages = await browser.pages();
+  const page = pages[0]
+
+  let userAgent = generateRandomUserAgent()
+  await page.setUserAgent(userAgent);
+  
+  await page.setExtraHTTPHeaders({
+		'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8', 
+		'accept-encoding': 'gzip, deflate, br', 
+		'accept-language': 'en-US,en;q=0.9,en;q=0.8' 
+  })
     // search term
   await page.goto('https://www.tiktok.com/', { waitUntil: 'domcontentloaded'});
   
@@ -49,25 +54,26 @@ async function automateBrowser(query,targetCount, officialAccount) {
 
 async function scrapeVideoUrls(browser, query, targetCount, officialAccount, page ) {
   console.log('launched!')
-  
+    await page.waitForTimeout(randomTimeout())
+
     const currentDate = new Date();
     const extractedData = []
     try { 
-      const buttonSelector = '[data-e2e="channel-item"].css-u3m0da-DivBoxContainer';
+      const buttonSelector = '.css-u3m0da-DivBoxContainer';
       const buttonExists = await page.waitForSelector(buttonSelector , { visible: true });
     
       if (buttonExists) {
         await page.mouse.move(200, 400, { steps: 5 });
-        await page.waitForTimeout(2100);
+        await page.waitForTimeout(randomTimeout());
         await page.mouse.move(200, 400, { steps: 5 });
         await page.click(buttonSelector);
       }
-        await page.waitForTimeout(2100);
+        await page.waitForTimeout(randomTimeout());
 
       const searchBox = await page.$('input[type=search]');
       if (searchBox) {
         await searchBox.type(query, { delay: 223 });
-        await page.waitForTimeout(610);
+        await page.waitForTimeout(randomTimeout())
         await searchBox.press('Enter');
     } else {
       console.error('Search box not found on the page.proceeding to next action');
@@ -75,19 +81,19 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount, pag
 
       if (searchBox) {
         await searchBox.type(query, { delay: 167 });
-        await page.waitForTimeout(610);
+        await page.waitForTimeout(randomTimeout())
         await searchBox.press('Enter');
       } else {
         console.error('Search box not found on the page.');
       }
     }
 
-    } catch {
+    } catch(error) {
       console.error('error', error)
       
     }
 
-  
+    
     const cardDivSelector = '.css-1soki6-DivItemContainerForSearch.e19c29qe10'
     await page.waitForSelector(cardDivSelector);
 
@@ -124,7 +130,7 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount, pag
     extractedData.push(...filteredCardDataArray);
     console.log('what is filteredcarddatarray', filteredCardDataArray)
     mongoService.insertScrapedData(filteredCardDataArray);
-    
+    await page.waitForTimeout(randomTimeout())
     previousHeight = await page.evaluate('document.body.scrollHeight');
     await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
     await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`);
