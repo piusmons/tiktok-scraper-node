@@ -1,8 +1,6 @@
 const puppeteer = require('puppeteer-extra');
 require('dotenv').config();
 const { parseRelativeTime, generateRandomUserAgent, randomTimeout, generateRandomProxy} = require('./helpers');
-const mongoose = require('mongoose');
-const schema = require('mongoose')
 const mongoService = require('./mongoService')
 const Stealth = require('puppeteer-extra-plugin-stealth');
 const ScrapedUrl = require('../models/urlModel.js');
@@ -62,9 +60,9 @@ async function scrapeVideoUrls(browser, query, targetCount, officialAccount, pag
     const buttonExists = await page.waitForSelector(buttonSelector , { visible: true });
   
     if (buttonExists) {
-      await page.mouse.move(200, 400, { steps: 5 });
+      await page.mouse.move(200, 500, { steps: 5 });
       await page.waitForTimeout(randomTimeout());
-      await page.mouse.move(200, 400, { steps: 5 });
+      await page.mouse.move(200, 400, { steps: 6 });
       await page.click(buttonSelector);
     }
       await page.waitForTimeout(randomTimeout());
@@ -138,7 +136,7 @@ async function scrapeCardData(page, query, officialAccount, extractedData) {
   const cardDataArray = await Promise.all(cardDataPromises);
   const filteredCardDataArray = cardDataArray.filter(data => data !== null && data !== undefined);
   extractedData.push(...filteredCardDataArray);
-
+  mongoService.insertScrapedData(filteredCardDataArray);
   return extractedData;
 }
 
